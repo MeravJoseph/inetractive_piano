@@ -5,18 +5,42 @@ import matplotlib
 
 class Piano(object):
     def __init__(self):
-        self.num_piano_keys = 7 * 2
         self.markers_list = [{'id': 203, 'name': 'top_left', 'corner_ind': 2, 'corners': None},
                              {'id': 204, 'name': 'top_right', 'corner_ind': 3, 'corners': None},
                              {'id': 205, 'name': 'bottom_right', 'corner_ind': 0, 'corners': None},
                              {'id': 206, 'name': 'bottom_left', 'corner_ind': 1, 'corners': None}]
+        self.key_list = [{'note': 'C',  'octave': 4, 'x': 0},
+                         {'note': 'C#', 'octave': 4, 'x': 0.75},
+                         {'note': 'D',  'octave': 4, 'x': 1},
+                         {'note': 'D#', 'octave': 4, 'x': 1.75},
+                         {'note': 'E',  'octave': 4, 'x': 2},
+                         {'note': 'F',  'octave': 4, 'x': 3},
+                         {'note': 'F#', 'octave': 4, 'x': 3.75},
+                         {'note': 'G',  'octave': 4, 'x': 4},
+                         {'note': 'G#', 'octave': 4, 'x': 4.75},
+                         {'note': 'A',  'octave': 4, 'x': 5},
+                         {'note': 'A#', 'octave': 4, 'x': 5.75},
+                         {'note': 'B',  'octave': 4, 'x': 6},
+                         {'note': 'C',  'octave': 5, 'x': 7},
+                         {'note': 'C#', 'octave': 5, 'x': 7.75},
+                         {'note': 'D',  'octave': 5, 'x': 8},
+                         {'note': 'D#', 'octave': 5, 'x': 8.75},
+                         {'note': 'E',  'octave': 5, 'x': 9},
+                         {'note': 'F',  'octave': 5, 'x': 10},
+                         {'note': 'F#', 'octave': 5, 'x': 10.75},
+                         {'note': 'G',  'octave': 5, 'x': 11},
+                         {'note': 'G#', 'octave': 5, 'x': 11.75},
+                         {'note': 'A',  'octave': 5, 'x': 12},
+                         {'note': 'A#', 'octave': 5, 'x': 12.75},
+                         {'note': 'B',  'octave': 5, 'x': 13}]
+        self.keys_color = self._generate_colormap(len(self.key_list))
+        self.keys_im_polygon_list = None
+        self.num_white_keys = self._get_num_white_keys()
 
-        self.white_key_width = 0.5  # In size of the AruCo marker units which is printed
-        self.white_key_height = 2   # In size of the AruCo marker units which is printed
-        self.black_key_width = 0.25  # In size of the AruCo marker units which is printed
-        self.black_key_height = 1   # In size of the AruCo marker units which is printed
-        self.keys_color = self._generate_colormap(self.num_piano_keys)
-        self.keys_polygon_list = None
+        # self.white_key_width = 0.5  # In size of the AruCo marker units which is printed
+        # self.white_key_height = 2   # In size of the AruCo marker units which is printed
+        # self.black_key_width = 0.25  # In size of the AruCo marker units which is printed
+        # self.black_key_height = 1   # In size of the AruCo marker units which is printed
 
     def update_coordinates(self, corners, ids):
         """
@@ -53,8 +77,8 @@ class Piano(object):
 
         # Find image vectors in coordinates of the piano.
         # 1 unit is equal to 1 white key
-        v_right_top = (top_right_corner - top_left_corner) / float(self.num_piano_keys)
-        v_right_bot = (bottom_right_corner - bottom_left_corner) / float(self.num_piano_keys)
+        v_right_top = (top_right_corner - top_left_corner) / float(self.num_white_keys)
+        v_right_bot = (bottom_right_corner - bottom_left_corner) / float(self.num_white_keys)
         v_right = (v_right_top + v_right_bot) / 2.0
 
         v_down_left = (bottom_left_corner - top_left_corner)
@@ -63,22 +87,28 @@ class Piano(object):
 
         piano_origin = top_left_corner
 
-        self.keys_polygon_list = []
-        for key in range(self.num_piano_keys):
-            c = np.array([[piano_origin + key * v_right],
-                          [piano_origin + (key + 1) * v_right],
-                          [piano_origin + (key + 1) * v_right + v_down],
-                          [piano_origin + (key) * v_right + v_down]])
-            self.keys_polygon_list.append(c)
+        self.keys_im_polygon_list = []
+        for key in self.key_list:
+            if '#' in key['note']:
+                w = 0.5
+                h = 0.5
+            else:
+                w = 1.0
+                h = 1.0
+            c = np.array([[piano_origin + key['x'] * v_right],
+                          [piano_origin + (key['x'] + w) * v_right],
+                          [piano_origin + (key['x'] + w) * v_right + h * v_down],
+                          [piano_origin + (key['x']) * v_right + h * v_down]])
+            self.keys_im_polygon_list.append(c)
 
     def get_key_polygon(self, key_ind):
-        return self.keys_polygon_list[key_ind].astype(np.int32)
+        return self.keys_im_polygon_list[key_ind].astype(np.int32)
 
     def get_key_color(self, key_ind):
         return self.keys_color[key_ind]
 
     def is_initialize(self):
-        return self.keys_polygon_list is not None
+        return self.keys_im_polygon_list is not None
 
     @staticmethod
     def _generate_colormap(num_of_levels):
@@ -94,3 +124,6 @@ class Piano(object):
 
     def _get_markers_names(self):
         return [x['name'] for x in self.markers_list]
+
+    def _get_num_white_keys(self):
+        return len([x for x in self.key_list if '#' not in x['note']])

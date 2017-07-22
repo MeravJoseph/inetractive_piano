@@ -3,8 +3,6 @@ import os
 import numpy as np
 import pygame
 import time
-import itertools
-import matplotlib.pyplot as plt
 import cv2
 
 

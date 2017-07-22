@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 import cv2
 from projector import Display, calibrate_projector
@@ -50,7 +49,7 @@ class Manager(object):
             # Project a key
             self.img_to_project.fill(0)
             if self.piano.is_initialize():
-                piano_key_ind = 0
+                piano_key_ind = 3
                 pts = self.piano.get_key_polygon(piano_key_ind)
                 color = self.piano.get_key_color(piano_key_ind)
 
