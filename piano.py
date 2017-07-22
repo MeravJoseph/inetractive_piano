@@ -36,6 +36,8 @@ class Piano(object):
         self.keys_color = self._generate_colormap(len(self.key_list))
         self.keys_im_polygon_list = None
         self.num_white_keys = self._get_num_white_keys()
+        self.markers_ids = self._get_markers_ids()
+        self.markers_names = self._get_markers_names()
 
         # self.white_key_width = 0.5  # In size of the AruCo marker units which is printed
         # self.white_key_height = 2   # In size of the AruCo marker units which is printed
@@ -52,24 +54,22 @@ class Piano(object):
         ids = ids.flatten()
 
         # Filter out any marker id which is not related to the piano
-        markers_ids = self._get_markers_ids()
-        markers_names = self._get_markers_names()
-        ids_relevant = [x for x in ids if x in markers_ids]
+        ids_relevant = [x for x in ids if x in self.markers_ids]
 
         if len(ids_relevant) != len(self.markers_list):
             # Don't update the corners if we didn't find them all
             print("Did not update piano corners")
             return
 
+        # Add 4 corners of markers to our dictionary
         for i_tmp, id_tmp in enumerate(ids_relevant):
-            j = np.flatnonzero(id_tmp == markers_ids)
-            self.markers_list[j[0]]['corners'] = corners[i_tmp]
+            self.markers_list[self.markers_ids.index(id_tmp)]['corners'] = corners[i_tmp].copy()
 
         # Get specific piano board corner from the markers corners
-        top_left_item = self.markers_list[markers_names.index('top_left')]
-        top_right_item = self.markers_list[markers_names.index('top_right')]
-        bottom_right_item = self.markers_list[markers_names.index('bottom_right')]
-        bottom_left_item = self.markers_list[markers_names.index('bottom_left')]
+        top_left_item = self.markers_list[self.markers_names.index('top_left')]
+        top_right_item = self.markers_list[self.markers_names.index('top_right')]
+        bottom_right_item = self.markers_list[self.markers_names.index('bottom_right')]
+        bottom_left_item = self.markers_list[self.markers_names.index('bottom_left')]
         top_left_corner = top_left_item['corners'][0][top_left_item['corner_ind']]
         top_right_corner = top_right_item['corners'][0][top_right_item['corner_ind']]
         bottom_right_corner = bottom_right_item['corners'][0][bottom_right_item['corner_ind']]
