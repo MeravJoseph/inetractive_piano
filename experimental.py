@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import cv2
-from projector import Display, calibrate_projector
+from media import Display, calibrate_projector
 
 PARAMS = {}
 PARAMS['aruco'] = {'dict': cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL),

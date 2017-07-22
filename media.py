@@ -116,6 +116,36 @@ class Display:
     def close(self):
         pygame.display.quit()
 
+
+class Sound(object):
+    def __init__(self, wav_directory):
+        self.wav_directory = wav_directory
+        pygame.mixer.init()
+        self.wav_dict = self._load_wav_files()
+
+    def play_note_sound(self, name):
+        """ Plays note sound
+
+        :param name: Note name, like in Piano class: "C#4", "D5", ...
+        """
+        self.wav_dict[name].play()
+
+    def _load_wav_files(self):
+        """
+        Loads the note .wav files into memory.
+        :return: dictionary
+        """
+        files = os.listdir(self.wav_directory)
+        d = dict()
+        for f in files:
+            fn, ext = os.path.splitext(f)
+            if not (ext == ".wav"):
+                continue
+            d[fn] = pygame.mixer.Sound(os.path.join(self.wav_directory, f))
+        return d
+
+
+
 if __name__ == "__main__":
     display = Display()
     import numpy as np

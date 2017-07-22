@@ -1,7 +1,11 @@
+import time
 import numpy as np
 import cv2
-from projector import Display, calibrate_projector
+from media import Display, Sound, calibrate_projector
 from piano import Piano
+
+song1 = ["G5", "E5", "E5", "F5", "D5", "D5", "C5", "D5", "E5", "F5", "G5", "G5", "G5",
+         "G5", "E5", "E5", "F5", "D5", "D5", "C5", "E5", "G5", "G5", "C5"]
 
 
 class Manager(object):
@@ -22,8 +26,10 @@ class Manager(object):
     def run(self):
         self.calibrate_cam_to_proj()
         display = Display(screen_width=self.screen_size[0])
+        sound = Sound(wav_directory="wav")
         cap = cv2.VideoCapture(1)
         frame_num = 0
+        note_num = 0    # note index in the song
         while True:
             # Get an image from camera
             img = self._get_image(cap_obj=cap)
@@ -49,13 +55,18 @@ class Manager(object):
             # Project a key
             self.img_to_project.fill(0)
             if self.piano.is_initialize():
-                piano_key_ind = 3
+                piano_key_ind = self.piano.get_key_index_by_name(song1[note_num])
                 pts = self.piano.get_key_polygon(piano_key_ind)
                 color = self.piano.get_key_color(piano_key_ind)
 
                 cv2.fillPoly(self.img_to_project, [pts], color, cv2.LINE_AA)
                 cv2.putText(self.img_to_project, "%d" % piano_key_ind, tuple(pts[3, 0, :]),
                             cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0))
+
+                # Play note sound
+                sound.play_note_sound(self.piano.key_list[piano_key_ind]['note'])
+                time.sleep(0.5)
+                note_num += 1
 
             cv2.imshow('img_to_project', self.img_to_project)
             # Transform image to projector coordinates

@@ -9,30 +9,30 @@ class Piano(object):
                              {'id': 204, 'name': 'top_right', 'corner_ind': 3, 'corners': None},
                              {'id': 205, 'name': 'bottom_right', 'corner_ind': 0, 'corners': None},
                              {'id': 206, 'name': 'bottom_left', 'corner_ind': 1, 'corners': None}]
-        self.key_list = [{'note': 'C',  'octave': 4, 'x': 0},
-                         {'note': 'C#', 'octave': 4, 'x': 0.75},
-                         {'note': 'D',  'octave': 4, 'x': 1},
-                         {'note': 'D#', 'octave': 4, 'x': 1.75},
-                         {'note': 'E',  'octave': 4, 'x': 2},
-                         {'note': 'F',  'octave': 4, 'x': 3},
-                         {'note': 'F#', 'octave': 4, 'x': 3.75},
-                         {'note': 'G',  'octave': 4, 'x': 4},
-                         {'note': 'G#', 'octave': 4, 'x': 4.75},
-                         {'note': 'A',  'octave': 4, 'x': 5},
-                         {'note': 'A#', 'octave': 4, 'x': 5.75},
-                         {'note': 'B',  'octave': 4, 'x': 6},
-                         {'note': 'C',  'octave': 5, 'x': 7},
-                         {'note': 'C#', 'octave': 5, 'x': 7.75},
-                         {'note': 'D',  'octave': 5, 'x': 8},
-                         {'note': 'D#', 'octave': 5, 'x': 8.75},
-                         {'note': 'E',  'octave': 5, 'x': 9},
-                         {'note': 'F',  'octave': 5, 'x': 10},
-                         {'note': 'F#', 'octave': 5, 'x': 10.75},
-                         {'note': 'G',  'octave': 5, 'x': 11},
-                         {'note': 'G#', 'octave': 5, 'x': 11.75},
-                         {'note': 'A',  'octave': 5, 'x': 12},
-                         {'note': 'A#', 'octave': 5, 'x': 12.75},
-                         {'note': 'B',  'octave': 5, 'x': 13}]
+        self.key_list = [{'note': 'C4',  'x': 0},
+                         {'note': 'C#4', 'x': 0.75},
+                         {'note': 'D4',  'x': 1},
+                         {'note': 'D#4', 'x': 1.75},
+                         {'note': 'E4',  'x': 2},
+                         {'note': 'F4',  'x': 3},
+                         {'note': 'F#4', 'x': 3.75},
+                         {'note': 'G4',  'x': 4},
+                         {'note': 'G#4', 'x': 4.75},
+                         {'note': 'A4',  'x': 5},
+                         {'note': 'A#4', 'x': 5.75},
+                         {'note': 'B4',  'x': 6},
+                         {'note': 'C5',  'x': 7},
+                         {'note': 'C#5', 'x': 7.75},
+                         {'note': 'D5',  'x': 8},
+                         {'note': 'D#5', 'x': 8.75},
+                         {'note': 'E5',  'x': 9},
+                         {'note': 'F5',  'x': 10},
+                         {'note': 'F#5', 'x': 10.75},
+                         {'note': 'G5',  'x': 11},
+                         {'note': 'G#5', 'x': 11.75},
+                         {'note': 'A5',  'x': 12},
+                         {'note': 'A#5', 'x': 12.75},
+                         {'note': 'B5',  'x': 13}]
         self.keys_color = self._generate_colormap(len(self.key_list))
         self.keys_im_polygon_list = None
         self.num_white_keys = self._get_num_white_keys()
@@ -127,3 +127,7 @@ class Piano(object):
 
     def _get_num_white_keys(self):
         return len([x for x in self.key_list if '#' not in x['note']])
+
+    def get_key_index_by_name(self, name):
+        tmp = [x['note'] for x in self.key_list]
+        return tmp.index(name)
