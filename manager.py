@@ -16,7 +16,7 @@ class Manager(object):
         # self.display = Display(screen_width=self.screen_size[0])
         self.piano = Piano()
         self.cam_to_proj = None  # Transformation from camera to projector coordinates
-        self.song = ["G5", "E5", "E5", "br", "F5", "D5", "D5", "br", "C5", "D5", "E5", "F5", "G5", "G5", "G5",
+        self.song = ["C#4", "C4", "F#5", "B4", "G5", "E5", "E5", "br", "F5", "D5", "D5", "br", "C5", "D5", "E5", "F5", "G5", "G5", "G5",
          "br","G5", "E5", "E5", "br", "F5", "D5", "D5", "br", "C5", "E5", "G5", "G5", "C5"]
 
     def calibrate_cam_to_proj(self):
@@ -33,6 +33,9 @@ class Manager(object):
         is_clicked = False   # Flag which indicate if user pressed on key
         history_frame_num = 10
         erode_kernel = np.ones((5, 5), np.uint8)
+        history_pts = None
+        aruco_detect_params = cv2.aruco.DetectorParameters_create()
+        aruco_detect_params.doCornerRefinement = True
         fgbg = cv2.createBackgroundSubtractorMOG2(history=4, varThreshold=50.0, detectShadows=False)
         while True:
             # Get an image from camera
@@ -42,11 +45,13 @@ class Manager(object):
             fgmask = fgbg.apply(gray)  # Add to background subtraction model
 
             # Find the piano board AruCo markers
-            corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, self.aruco_dict)
+            corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, self.aruco_dict, parameters=aruco_detect_params)
             cv2.aruco.drawDetectedMarkers(img, corners, ids)
 
             # Display image for debug
-            cv2.imshow('camera', img)
+            img_debug = img.copy()
+            cv2.putText(img_debug, "%d" % frame_num, (8, 25), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0))
+            cv2.imshow('camera', img_debug)
 
             # If no markers were found continue to next frame
             if ids is None:
@@ -64,8 +69,16 @@ class Manager(object):
                     # If note is not break
                     piano_key_ind = self.piano.get_key_index_by_name(self.song[note_num])
                     pts = self.piano.get_key_polygon(piano_key_ind)
-                    color = self.piano.get_key_color(piano_key_ind)
+                    if not(is_initial_song_played):
+                        color = self.piano.get_key_color(piano_key_ind)
+                    else:
+                        color = (0, 0, 255)
                     cv2.fillPoly(self.img_to_project, [pts], color, cv2.LINE_AA)
+                    x = int((pts[0, 0, 0] + pts[1, 0, 0]) / 2.0 - 5)
+                    y = int((pts[0, 0, 1] + pts[1, 0, 1]) / 2.0 - 10)
+
+                    cv2.putText(self.img_to_project, "%s" % self.song[note_num], (x, y), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 255, 0))
+
                     # cv2.putText(self.img_to_project, "%d" % piano_key_ind, tuple(pts[3, 0, :]),
                     #             cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0))
 
@@ -82,7 +95,6 @@ class Manager(object):
                     time.sleep(0.5)
                     note_num += 1
                     history_frame_num = frame_num
-
                 else:
                     if is_clicked:
                         sound.play_note_sound(self.song[note_num])
@@ -90,6 +102,7 @@ class Manager(object):
                         note_num += 1
                         is_clicked = False
                         history_frame_num = frame_num
+                        # history_pts = pts
 
                 # Check if song has ended
                 if note_num >= len(self.song):
@@ -104,6 +117,24 @@ class Manager(object):
             # Plot debug image
             # cv2.imshow('img_to_project', self.img_to_project)
 
+            # Detect key press
+            if frame_num > history_frame_num + 7:
+                key_mask = cv2.cvtColor(self.img_to_project, cv2.COLOR_BGR2GRAY) > 5
+                key_mask = np.uint8(key_mask) * 255
+                key_mask = cv2.erode(key_mask, erode_kernel)
+                key_mask = key_mask.astype(bool)
+                fgmask[~key_mask] = 0
+                num_pixels_in_key = np.sum(key_mask)
+                num_pixels_changed = np.sum(fgmask > 0)
+                frac_pixels_changed = float(num_pixels_changed) / float(num_pixels_in_key)
+                if frac_pixels_changed > 0.05:
+                    print("Key clicked | Num pixels = %d | fraction = %.3f" % (num_pixels_changed, frac_pixels_changed))
+                    is_clicked = True
+                cv2.imshow('background_mask', fgmask)
+            else:
+                if history_pts is not None:
+                   cv2.fillPoly(self.img_to_project, [history_pts], (0, 255, 0), cv2.LINE_AA)
+
             # Transform image to projector coordinates
             dst = cv2.warpPerspective(self.img_to_project, self.cam_to_proj, self.screen_size)
             dst = cv2.cvtColor(dst, cv2.COLOR_BGR2RGB)
@@ -113,20 +144,6 @@ class Manager(object):
             key = cv2.waitKey(1)
             if key & 0xFF == ord(self.key_quit):
                 break
-
-            # Detect key press
-            if frame_num > history_frame_num + 5:
-                key_mask = cv2.cvtColor(self.img_to_project, cv2.COLOR_BGR2GRAY) > 5
-                key_mask = np.uint8(key_mask) * 255
-                key_mask = cv2.erode(key_mask, erode_kernel)
-                key_mask = key_mask.astype(bool)
-                fgmask[~key_mask] = 0
-                num_pixels_changed = np.sum(fgmask > 0)
-                if num_pixels_changed > 50:
-                    print("Key clicked | Num pixels = %d" % num_pixels_changed)
-                    is_clicked = True
-                cv2.imshow('background_mask', fgmask)
-
 
         # When everything done, release the capture
         cap.release()
@@ -142,8 +159,8 @@ class Manager(object):
         # Capture frame-by-frame
         # This is a workaround to clean the buffer of the camera
         # We skip the first 5 frames
-        for w in range(5):
-            cap_obj.grab()
+        # for w in range(1):
+        #     cap_obj.grab()
         ret, img = cap_obj.read()
 
         # Test camera-to-projector transformation by projecting camera image

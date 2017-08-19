@@ -66,7 +66,8 @@ class Piano(object):
 
         # Add 4 corners of markers to our dictionary
         for i_tmp, id_tmp in enumerate(ids_relevant):
-            self.markers_list[self.markers_ids.index(id_tmp)]['corners'] = corners[i_tmp].copy()
+            id_input = np.flatnonzero(ids == id_tmp)[0]
+            self.markers_list[self.markers_ids.index(id_tmp)]['corners'] = corners[id_input].copy()
 
         # Get specific piano board corner from the markers corners
         top_left_item = self.markers_list[self.markers_names.index('top_left')]
@@ -117,7 +118,7 @@ class Piano(object):
     @staticmethod
     def _generate_colormap(num_of_levels):
         # define the piano keys colormap
-        cmap = matplotlib.cm.get_cmap('Set2')
+        cmap = matplotlib.cm.get_cmap('brg')
         norm = matplotlib.colors.Normalize(vmin=0, vmax=num_of_levels)
         cmap_keys = [cmap(norm(i))[:3] for i in range(num_of_levels)]
         cmap_keys = [np.uint8(np.round(255 * np.array(x))).tolist() for x in cmap_keys]

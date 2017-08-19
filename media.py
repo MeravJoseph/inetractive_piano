@@ -15,7 +15,7 @@ def calibrate_projector(screen_size, aruco_dict):
     """
     # Create grid board with AruCo markers
     board = cv2.aruco.GridBoard_create(9, 6, 0.025, .0125, aruco_dict)
-    img_board = board.draw((screen_size[0]-200, screen_size[1]-60))
+    img_board = board.draw((screen_size[0]-200, screen_size[1]-100))
     img_board = np.pad(img_board, pad_width=10, mode='constant', constant_values=255)
     img_board_rgb = np.dstack((img_board, img_board, img_board))
 
@@ -31,6 +31,8 @@ def calibrate_projector(screen_size, aruco_dict):
     display.show_array(img_board_rgb)
 
     # Detect markers using the camera
+    aruco_detect_params = cv2.aruco.DetectorParameters_create()
+    aruco_detect_params.doCornerRefinement = True
     proj_to_cam = None
     cap = cv2.VideoCapture(1)
     while True:
@@ -39,7 +41,7 @@ def calibrate_projector(screen_size, aruco_dict):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Find the marker corners
-        corners_cam, ids_cam, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict)
+        corners_cam, ids_cam, rejectedImgPoints = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_detect_params)
 
         # If no markers were found continue to next frame
         if ids_cam is None:
