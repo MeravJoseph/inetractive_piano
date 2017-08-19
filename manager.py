@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 from media import Display, Sound, calibrate_projector
 from piano import Piano
-
+import matplotlib.pyplot as plt
 
 class Manager(object):
     def __init__(self):
@@ -29,11 +29,17 @@ class Manager(object):
         cap = cv2.VideoCapture(1)
         frame_num = 0
         note_num = 0    # note index in the song
+        is_initial_song_played = True  # Flag which indicate if we did first play of the song
+        is_clicked = False   # Flag which indicate if user pressed on key
+        history_frame_num = 10
+        erode_kernel = np.ones((5, 5), np.uint8)
+        fgbg = cv2.createBackgroundSubtractorMOG2(history=4, varThreshold=50.0, detectShadows=False)
         while True:
             # Get an image from camera
             img = self._get_image(cap_obj=cap)
             frame_num += 1
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            fgmask = fgbg.apply(gray)  # Add to background subtraction model
 
             # Find the piano board AruCo markers
             corners, ids, rejectedImgPoints = cv2.aruco.detectMarkers(gray, self.aruco_dict)
@@ -59,17 +65,45 @@ class Manager(object):
                     piano_key_ind = self.piano.get_key_index_by_name(self.song[note_num])
                     pts = self.piano.get_key_polygon(piano_key_ind)
                     color = self.piano.get_key_color(piano_key_ind)
-
                     cv2.fillPoly(self.img_to_project, [pts], color, cv2.LINE_AA)
-                    cv2.putText(self.img_to_project, "%d" % piano_key_ind, tuple(pts[3, 0, :]),
-                                cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0))
+                    # cv2.putText(self.img_to_project, "%d" % piano_key_ind, tuple(pts[3, 0, :]),
+                    #             cv2.FONT_HERSHEY_PLAIN, 1.5, (255, 0, 0))
 
+                else:
+                    if is_initial_song_played:
+                        is_clicked = True
+
+                # Play sound
+                if not(is_initial_song_played):
                     # Play note sound
-                    sound.play_note_sound(self.piano.key_list[piano_key_ind]['note'])
-                time.sleep(0.5)
-                note_num += 1
+                    sound.play_note_sound(self.song[note_num])
 
-            cv2.imshow('img_to_project', self.img_to_project)
+                    # Advance to the next note
+                    time.sleep(0.5)
+                    note_num += 1
+                    history_frame_num = frame_num
+
+                else:
+                    if is_clicked:
+                        sound.play_note_sound(self.song[note_num])
+                        time.sleep(0.5)
+                        note_num += 1
+                        is_clicked = False
+                        history_frame_num = frame_num
+
+                # Check if song has ended
+                if note_num >= len(self.song):
+                    print("Song Finished!")
+                    time.sleep(0.5)
+                    if not(is_initial_song_played):
+                        is_initial_song_played = True
+                        note_num = 0
+                    else:
+                        break
+
+            # Plot debug image
+            # cv2.imshow('img_to_project', self.img_to_project)
+
             # Transform image to projector coordinates
             dst = cv2.warpPerspective(self.img_to_project, self.cam_to_proj, self.screen_size)
             dst = cv2.cvtColor(dst, cv2.COLOR_BGR2RGB)
@@ -79,6 +113,21 @@ class Manager(object):
             key = cv2.waitKey(1)
             if key & 0xFF == ord(self.key_quit):
                 break
+
+            # Detect key press
+            if frame_num > history_frame_num + 5:
+                key_mask = cv2.cvtColor(self.img_to_project, cv2.COLOR_BGR2GRAY) > 5
+                key_mask = np.uint8(key_mask) * 255
+                key_mask = cv2.erode(key_mask, erode_kernel)
+                key_mask = key_mask.astype(bool)
+                fgmask[~key_mask] = 0
+                num_pixels_changed = np.sum(fgmask > 0)
+                if num_pixels_changed > 50:
+                    print("Key clicked | Num pixels = %d" % num_pixels_changed)
+                    is_clicked = True
+                cv2.imshow('background_mask', fgmask)
+
+
         # When everything done, release the capture
         cap.release()
         cv2.destroyAllWindows()
@@ -91,6 +140,10 @@ class Manager(object):
         :return: Image as NumPy array
         """
         # Capture frame-by-frame
+        # This is a workaround to clean the buffer of the camera
+        # We skip the first 5 frames
+        for w in range(5):
+            cap_obj.grab()
         ret, img = cap_obj.read()
 
         # Test camera-to-projector transformation by projecting camera image

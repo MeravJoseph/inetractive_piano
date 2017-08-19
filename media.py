@@ -128,6 +128,7 @@ class Sound(object):
 
         :param name: Note name, like in Piano class: "C#4", "D5", ...
         """
+        if name == "br": return
         self.wav_dict[name].play()
 
     def _load_wav_files(self):

@@ -4,7 +4,7 @@ import matplotlib
 
 
 class Piano(object):
-    def __init__(self):
+    def __init__(self, mode=0):
         self.markers_list = [{'id': 203, 'name': 'top_left', 'corner_ind': 2, 'corners': None},
                              {'id': 204, 'name': 'top_right', 'corner_ind': 3, 'corners': None},
                              {'id': 205, 'name': 'bottom_right', 'corner_ind': 0, 'corners': None},
@@ -33,7 +33,10 @@ class Piano(object):
                          {'note': 'A5',  'x': 12},
                          {'note': 'A#5', 'x': 12.75},
                          {'note': 'B5',  'x': 13}]
-        self.keys_color = self._generate_colormap(len(self.key_list))
+        if mode == 0:
+            self.keys_color = self._generate_colormap(len(self.key_list))
+        else:
+            self.keys_color = [[0, 0, 255] for x in range(len(self.key_list))]
         self.keys_im_polygon_list = None
         self.num_white_keys = self._get_num_white_keys()
         self.markers_ids = self._get_markers_ids()
@@ -70,20 +73,21 @@ class Piano(object):
         top_right_item = self.markers_list[self.markers_names.index('top_right')]
         bottom_right_item = self.markers_list[self.markers_names.index('bottom_right')]
         bottom_left_item = self.markers_list[self.markers_names.index('bottom_left')]
-        top_left_corner = top_left_item['corners'][0][top_left_item['corner_ind']]
-        top_right_corner = top_right_item['corners'][0][top_right_item['corner_ind']]
-        bottom_right_corner = bottom_right_item['corners'][0][bottom_right_item['corner_ind']]
-        bottom_left_corner = bottom_left_item['corners'][0][bottom_left_item['corner_ind']]
+        top_left_corner = top_left_item['corners'][0][top_left_item['corner_ind']].astype(float)
+        top_right_corner = top_right_item['corners'][0][top_right_item['corner_ind']].astype(float)
+        bottom_right_corner = bottom_right_item['corners'][0][bottom_right_item['corner_ind']].astype(float)
+        bottom_left_corner = bottom_left_item['corners'][0][bottom_left_item['corner_ind']].astype(float)
 
         # Find image vectors in coordinates of the piano.
         # 1 unit is equal to 1 white key
-        v_right_top = (top_right_corner - top_left_corner) / float(self.num_white_keys)
-        v_right_bot = (bottom_right_corner - bottom_left_corner) / float(self.num_white_keys)
+        v_right_top = (top_right_corner-1 - top_left_corner+1) / float(self.num_white_keys)
+        v_right_bot = (bottom_right_corner-1 - bottom_left_corner+1) / float(self.num_white_keys)
         v_right = (v_right_top + v_right_bot) / 2.0
 
         v_down_left = (bottom_left_corner - top_left_corner)
         v_down_right = (bottom_right_corner - top_right_corner)
         v_down = (v_down_left + v_down_right) / 2.0
+        print([v_right, v_down])
 
         piano_origin = top_left_corner
 
